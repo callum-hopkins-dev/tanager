@@ -1,7 +1,15 @@
 [package]
 name = "tanager-macros"
+description = "Parse Rust literal struct expressions using syn."
 version = "0.1.0"
+authors = [ "Callum Hopkins" ]
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/callum-hopkins-dev/tanager"
+readme = "README.md"
+documentation = "https://docs.rs/tanager"
+keywords = ["proc-macro", "syn", "parse", "derive"]
+categories = ["development-tools::procedural-macro-helpers", "parser-implementations"]
 
 [lib]
 proc-macro = true
