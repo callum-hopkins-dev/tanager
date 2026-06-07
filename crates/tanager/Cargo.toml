@@ -1,0 +1,13 @@
+[package]
+name = "tanager"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+proc-macro2 = { version = "1.0.106", default-features = false }
+syn = { version = "2.0.117", default-features = false, features = ["parsing"] }
+tanager-macros = { version = "0.1.0", path = "../tanager-macros", optional = true }
+
+[features]
+default = ["macros"]
+macros = ["dep:tanager-macros"]
