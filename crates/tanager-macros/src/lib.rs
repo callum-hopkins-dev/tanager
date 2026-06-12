@@ -219,6 +219,10 @@ fn derive_parse_struct_named(
                     first = false;
                 } else {
                     let _ = input.parse::<#crate_ident::__macro::syn::Token![,]>()?;
+
+                    if input.is_empty() {
+                        break;
+                    }
                 }
 
                 let ident = input.parse::<#crate_ident::__macro::syn::Ident>()?;
