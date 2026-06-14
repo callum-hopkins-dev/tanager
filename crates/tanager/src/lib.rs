@@ -281,20 +281,18 @@ where
             syn::custom_keyword!(Some);
         }
 
-        let lookahead = input.lookahead1();
-
-        if lookahead.peek(kw::Some) {
+        if input.peek(kw::Some) {
             let _ = input.parse::<kw::Some>()?;
 
             let inner;
             parenthesized!(inner in input);
 
             Ok(Some(inner.call(T::parse)?))
-        } else if lookahead.peek(kw::None) {
+        } else if input.peek(kw::None) {
             let _ = input.parse::<kw::None>()?;
             Ok(None)
         } else {
-            Err(lookahead.error())
+            Ok(Some(input.call(T::parse)?))
         }
     }
 }
