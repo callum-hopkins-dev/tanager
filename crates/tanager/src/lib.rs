@@ -67,6 +67,27 @@ pub use syn::{Result, parse::ParseStream};
 /// }
 /// ```
 ///
+/// ## `#[tanager(transparent)]`
+///
+/// Generates a [`Parse`] implementation that forwards parsing to the inner
+/// field type.
+///
+/// This is useful for newtype wrappers that should parse exactly like their
+/// inner value, without requiring the wrapper's usual container syntax.
+///
+/// ```rust
+/// # use tanager::Parse;
+/// #[derive(Parse)]
+/// #[tanager(transparent)]
+/// struct Name(String);
+///
+/// // Parses the same input as `String`, for example:
+/// // "example"
+/// ```
+///
+/// The derived implementation behaves as though the wrapper were the inner
+/// type for parsing purposes.
+///
 /// # Field attributes
 ///
 /// ## `#[tanager(default = expr)]`

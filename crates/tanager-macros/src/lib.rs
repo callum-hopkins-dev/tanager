@@ -18,12 +18,22 @@ pub fn derive_parse(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 }
 
 fn derive_parse_container(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
-    let ContainerAttrs { crate_ident } = ContainerAttrs::parse(&input.attrs)?;
+    let ContainerAttrs {
+        crate_ident,
+        is_transparent,
+    } = ContainerAttrs::parse(&input.attrs)?;
 
     let crate_ident = crate_ident.unwrap_or_else(|| Ident::new("tanager", Span::call_site()));
 
     let parse_impl = match input.data {
-        Data::Struct(x) => derive_parse_struct(&crate_ident, x)?,
+        Data::Struct(x) => derive_parse_struct(&crate_ident, x, is_transparent)?,
+
+        Data::Enum(_) if is_transparent => {
+            return Err(syn::Error::new(
+                Span::call_site(),
+                "attribute `transparent` is not supported for enums",
+            ));
+        }
 
         Data::Enum(x) => derive_parse_enum(&crate_ident, x)?,
 
@@ -59,15 +69,24 @@ fn derive_parse_container(input: DeriveInput) -> syn::Result<proc_macro2::TokenS
 fn derive_parse_struct(
     crate_ident: &Ident,
     data: DataStruct,
+    is_transparent: bool,
 ) -> syn::Result<proc_macro2::TokenStream> {
     match data.fields {
+        Fields::Named(_) if is_transparent => Err(syn::Error::new(
+            Span::call_site(),
+            "attribute `transparent` is not supported for named structs",
+        )),
+
         Fields::Named(_) => derive_parse_struct_named(crate_ident, data),
 
-        Fields::Unnamed(_) if data.fields.len() == 1 => {
-            derive_parse_struct_newtype(crate_ident, data)
-        }
+        Fields::Unnamed(_) if is_transparent && data.fields.len() > 1 => Err(syn::Error::new(
+            Span::call_site(),
+            "attribute `transparent` is not supported for structs more than one field",
+        )),
 
+        Fields::Unnamed(_) if is_transparent => derive_parse_struct_newtype(crate_ident, data),
         Fields::Unnamed(_) => derive_parse_struct_tuple(crate_ident, data),
+
         Fields::Unit => derive_parse_struct_unit(crate_ident, data),
     }
 }
@@ -322,6 +341,7 @@ fn derive_parse_struct_unit(
 
 struct ContainerAttrs {
     crate_ident: Option<Ident>,
+    is_transparent: bool,
 }
 
 impl ContainerAttrs {
@@ -329,7 +349,10 @@ impl ContainerAttrs {
     where
         I: IntoIterator<Item: Borrow<Attribute>>,
     {
-        let mut container_attrs = Self { crate_ident: None };
+        let mut container_attrs = Self {
+            crate_ident: None,
+            is_transparent: false,
+        };
 
         for attr in attrs
             .into_iter()
@@ -342,6 +365,13 @@ impl ContainerAttrs {
                         Ok(())
                     } else {
                         Err(meta.error("duplicate attribute `crate`"))
+                    }
+                } else if meta.path.is_ident("transparent") {
+                    if !container_attrs.is_transparent {
+                        container_attrs.is_transparent = true;
+                        Ok(())
+                    } else {
+                        Err(meta.error("duplicate attribute `transparent`"))
                     }
                 } else {
                     Err(meta.error("unrecognised attribute"))
